@@ -1,132 +1,107 @@
-'use client'
+"use client";
+import { registerUser } from "@/actions/register";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+ 
+export const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Tên đăng nhập không được bỏ trống",
+  }),
+  email: z.string().min(2, {
+    message: "Email không được bỏ trống",
+  }).email({
+    message: "Email không hợp lệ",
+  }),
+  password: z.string().min(6, {
+    message: "Mật khẩu không được bỏ trống",
+  }),
+  confirmPassword: z.string().min(6, {
+    message: "Xác nhận mật khẩu không được bỏ trống",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  path: ["confirmPassword"],
+  message: "Mật khẩu và xác nhận mật khẩu không khớp",
+});
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { RegisterBody, RegisterBodyType } from '@/schemaValidations/auth.schema'
-import authApiRequest from '@/apiRequests/auth'
-import { useToast } from '@/components/ui/use-toast'
-import { useRouter } from 'next/navigation'
-import { handleErrorApi } from '@/lib/utils'
-import { useState } from 'react'
-import { useAppContext } from '@/app/app-provider'
-
-const RegisterForm = () => {
-  const [loading, setLoading] = useState(false)
-  const { setUser } = useAppContext()
-  const { toast } = useToast()
-  const router = useRouter()
-
-  const form = useForm<RegisterBodyType>({
-    resolver: zodResolver(RegisterBody),
+export default function RegisterForm() {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      name: '',
-      password: '',
-      confirmPassword: ''
-    }
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   })
-
-  // 2. Define a submit handler.
-  async function onSubmit(values: RegisterBodyType) {
-    if (loading) return
-    setLoading(true)
-    try {
-      const result = await authApiRequest.register(values)
-
-      await authApiRequest.auth({
-        sessionToken: result.payload.data.token,
-        expiresAt: result.payload.data.expiresAt
-      })
-      toast({
-        description: result.payload.message
-      })
-      setUser(result.payload.data.account)
-
-      router.push('/me')
-    } catch (error: any) {
-      handleErrorApi({
-        error,
-        setError: form.setError
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    return registerUser(data);
+  };
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className='space-y-2 max-w-[600px] flex-shrink-0 w-full'
-        noValidate
-      >
-        <FormField
-          control={form.control}
-          name='name'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tên</FormLabel>
+    <Form {...form} >
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="space-y-4"
+    >
+    <FormField
+      control={form.control}
+      name="name"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-white">Tên đăng nhập</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' {...field} />
+                <Input className="text-white" placeholder="Nhập tên đăng nhập ...." {...field} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='email'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
+        </FormItem>
+      )}
+    />
+    <FormField
+      control={form.control}
+      name="email"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-white">Email</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' type='email' {...field} />
+                <Input className="text-white" placeholder="Nhập email  ...." {...field} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='password'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mật khẩu</FormLabel>
+        </FormItem>
+      )}
+    />
+    <FormField
+      control={form.control}
+      name="password"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-white">Mật khẩu</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' type='password' {...field} />
+                <Input className="text-white" placeholder="Nhập mật khẩu ...." {...field} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='confirmPassword'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nhập lại mật khẩu</FormLabel>
+        </FormItem>
+      )}
+    />
+    <FormField
+      control={form.control}
+      name="confirmPassword"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-white">Xác nhân mật khẩu</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' type='password' {...field} />
+                <Input className="text-white" placeholder="Nhập lại mật khẩu ...." {...field} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type='submit' className='!mt-8 w-full'>
-          Đăng ký
-        </Button>
-      </form>
-    </Form>
+        </FormItem>
+      )}
+    />
+      <Button type="submit" className="w-full bg-[#333] hover:bg-[#444] text-white">
+        Đăng ký
+      </Button>
+    </form>
+  </Form>
   )
 }
-
-export default RegisterForm
